@@ -46,7 +46,7 @@ export default function GenerateSampleData({ setExportData, setModal, title }) {
   const hasTables = tables && tables.length > 0;
 
   return (
-    <div className="flex flex-col gap-4 py-2">
+    <div className="flex flex-col gap-4 py-2" data-testid="generate-sample-data-modal">
       <div>
         <label className="font-semibold block mb-1">{t("sample_data_rows_per_table")}</label>
         <InputNumber
