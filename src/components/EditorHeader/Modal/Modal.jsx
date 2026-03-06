@@ -31,6 +31,7 @@ import Open from "./Open";
 import Rename from "./Rename";
 import SetTableWidth from "./SetTableWidth";
 import Share from "./Share";
+import GenerateSampleData from "./GenerateSampleData";
 import { useNavigate } from "react-router-dom";
 
 const extensionToLanguage = {
@@ -305,6 +306,14 @@ export default function Modal({
         );
       case MODAL.SHARE:
         return <Share title={title} setModal={setModal} />;
+      case MODAL.SAMPLE_DATA:
+        return (
+          <GenerateSampleData
+            setExportData={setExportData}
+            setModal={setModal}
+            title={title}
+          />
+        );
       default:
         return <></>;
     }
@@ -349,7 +358,7 @@ export default function Modal({
           ((modal === MODAL.IMG || modal === MODAL.CODE) && !exportData.data) ||
           (modal === MODAL.SAVEAS && saveAsTitle === "") ||
           (modal === MODAL.IMPORT_SRC && importSource.src === ""),
-        hidden: modal === MODAL.SHARE,
+        hidden: modal === MODAL.SHARE || modal === MODAL.SAMPLE_DATA,
       }}
       hasCancel={modal !== MODAL.SHARE}
       cancelText={t("cancel")}
