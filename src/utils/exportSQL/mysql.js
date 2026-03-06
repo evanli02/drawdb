@@ -1,12 +1,9 @@
 import { escapeQuotes, parseDefault } from "./shared";
 
-import { dbToTypes, PRIME_VALUES } from "../../data/datatypes";
+import { dbToTypes } from "../../data/datatypes";
 import { DB } from "../../data/constants";
 
 function parseType(field) {
-  if (field.type === "MYPRIMETYPE") {
-    return "INT";
-  }
   let res = field.type;
 
   if (field.type === "SET" || field.type === "ENUM") {
@@ -21,10 +18,6 @@ function parseType(field) {
   }
 
   return res;
-}
-
-function getPrimeCheckValues(field) {
-  return (field.values && field.values.length ? field.values : PRIME_VALUES).join(", ");
 }
 
 export function toMySQL(diagram) {
@@ -45,12 +38,10 @@ export function toMySQL(diagram) {
                   ? ` DEFAULT ${parseDefault(field, diagram.database)}`
                   : ""
               }${
-                field.type === "MYPRIMETYPE"
-                  ? ` CHECK(\`${field.name}\` IN (${getPrimeCheckValues(field)}))`
-                  : field.check === "" ||
-                      !dbToTypes[diagram.database][field.type].hasCheck
-                    ? ""
-                    : ` CHECK(${field.check})`
+                field.check === "" ||
+                !dbToTypes[diagram.database][field.type].hasCheck
+                  ? ""
+                  : ` CHECK(${field.check})`
               }${field.comment ? ` COMMENT '${escapeQuotes(field.comment)}'` : ""}`,
           )
           .join(",\n")}${

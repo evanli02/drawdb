@@ -19,12 +19,6 @@ const intRegex = /^-?\d*$/;
 const doubleRegex = /^-?\d*.?\d+$/;
 const binaryRegex = /^[01]+$/;
 
-/** Fixed set of prime numbers supported by MYPRIMETYPE (as strings for storage/UI). */
-export const PRIME_VALUES = [
-  "2", "3", "5", "7", "11", "13", "17", "19", "23", "29", "31", "37", "41",
-  "43", "47", "53", "59", "61", "67", "71", "73", "79", "83", "89", "97",
-];
-
 /* eslint-disable no-unused-vars */
 const defaultTypesBase = {
   INT: {
@@ -351,19 +345,6 @@ const defaultTypesBase = {
     isSized: false,
     hasPrecision: false,
     noDefault: true,
-  },
-  MYPRIMETYPE: {
-    type: "MYPRIMETYPE",
-    color: intColor,
-    checkDefault: (field) => {
-      const values = field.values && field.values.length ? field.values : PRIME_VALUES;
-      return values.includes(String(field.default));
-    },
-    hasCheck: true,
-    isSized: false,
-    hasPrecision: false,
-    hasQuotes: false,
-    noDefault: false,
   },
 };
 
@@ -829,19 +810,6 @@ const mysqlTypesBase = {
     hasCheck: false,
     hasPrecision: false,
     noDefault: true,
-  },
-  MYPRIMETYPE: {
-    type: "MYPRIMETYPE",
-    color: intColor,
-    checkDefault: (field) => {
-      const values = field.values && field.values.length ? field.values : PRIME_VALUES;
-      return values.includes(String(field.default));
-    },
-    hasCheck: true,
-    isSized: false,
-    hasPrecision: false,
-    hasQuotes: false,
-    noDefault: false,
   },
 };
 
@@ -1432,19 +1400,6 @@ const postgresTypesBase = {
     hasQuotes: true,
     noDefault: true,
   },
-  MYPRIMETYPE: {
-    type: "MYPRIMETYPE",
-    color: intColor,
-    checkDefault: (field) => {
-      const values = field.values && field.values.length ? field.values : PRIME_VALUES;
-      return values.includes(String(field.default));
-    },
-    hasCheck: true,
-    isSized: false,
-    hasPrecision: false,
-    hasQuotes: false,
-    noDefault: false,
-  },
 };
 
 export const postgresTypes = new Proxy(postgresTypesBase, {
@@ -1593,19 +1548,6 @@ const sqliteTypesBase = {
     isSized: false,
     hasPrecision: false,
     hasQuotes: true,
-  },
-  MYPRIMETYPE: {
-    type: "MYPRIMETYPE",
-    color: intColor,
-    checkDefault: (field) => {
-      const values = field.values && field.values.length ? field.values : PRIME_VALUES;
-      return values.includes(String(field.default));
-    },
-    hasCheck: true,
-    isSized: false,
-    hasPrecision: false,
-    hasQuotes: false,
-    noDefault: false,
   },
 };
 
@@ -2028,19 +1970,6 @@ const mssqlTypesBase = {
     hasQuotes: true,
     noDefault: true,
   },
-  MYPRIMETYPE: {
-    type: "MYPRIMETYPE",
-    color: intColor,
-    checkDefault: (field) => {
-      const values = field.values && field.values.length ? field.values : PRIME_VALUES;
-      return values.includes(String(field.default));
-    },
-    hasCheck: true,
-    isSized: false,
-    hasPrecision: false,
-    hasQuotes: false,
-    noDefault: false,
-  },
 };
 
 export const mssqlTypes = new Proxy(mssqlTypesBase, {
@@ -2271,19 +2200,6 @@ const oraclesqlTypesBase = {
     hasPrecision: false,
     defaultSize: 255,
     hasQuotes: false,
-  },
-  MYPRIMETYPE: {
-    type: "MYPRIMETYPE",
-    color: intColor,
-    checkDefault: (field) => {
-      const values = field.values && field.values.length ? field.values : PRIME_VALUES;
-      return values.includes(String(field.default));
-    },
-    hasCheck: true,
-    isSized: false,
-    hasPrecision: false,
-    hasQuotes: false,
-    noDefault: false,
   },
 };
 

@@ -1,10 +1,6 @@
 import { DB } from "../../data/constants";
-import { dbToTypes, defaultTypes, PRIME_VALUES } from "../../data/datatypes";
+import { dbToTypes, defaultTypes } from "../../data/datatypes";
 import { escapeQuotes, getInlineFK, parseDefault } from "./shared";
-
-function getPrimeCheckValues(field) {
-  return (field.values && field.values.length ? field.values : PRIME_VALUES).join(", ");
-}
 
 export function getJsonType(f) {
   if (!Object.keys(defaultTypes).includes(f.type)) {
@@ -31,8 +27,6 @@ export function getJsonType(f) {
       return `{\n\t\t\t\t\t"type": "array",\n\t\t\t\t\t"items": {\n\t\t\t\t\t\t"type": "string",\n\t\t\t\t\t\t"enum": [${f.values
         .map((v) => `"${v}"`)
         .join(", ")}]\n\t\t\t\t\t}\n\t\t\t\t}`;
-    case "MYPRIMETYPE":
-      return `{\n\t\t\t\t\t"type": "integer",\n\t\t\t\t\t"enum": [${(f.values && f.values.length ? f.values : PRIME_VALUES).join(", ")}]\n\t\t\t\t}`;
     default:
       return '{ "type" : "string"}';
   }
@@ -65,9 +59,6 @@ export function getTypeString(
     if (field.type === "SET" || field.type === "ENUM") {
       return `${field.type}(${field.values.map((v) => `"${v}"`).join(", ")})`;
     }
-    if (field.type === "MYPRIMETYPE") {
-      return "INT";
-    }
     if (!Object.keys(defaultTypes).includes(field.type)) {
       return "JSON";
     }
@@ -87,9 +78,6 @@ export function getTypeString(
     }
     if (field.type === "SET") {
       return `${field.name}_t[]`;
-    }
-    if (field.type === "MYPRIMETYPE") {
-      return "integer";
     }
     if (field.type === "TIMESTAMP") {
       return "TIMESTAMPTZ";
@@ -136,8 +124,6 @@ export function getTypeString(
         return "BIT";
       case "SET":
         return "NVARCHAR(255)";
-      case "MYPRIMETYPE":
-        return baseType ? "INT" : `INT CHECK([${field.name}] IN (${getPrimeCheckValues(field)}))`;
       case "BLOB":
         return "VARBINARY(MAX)";
       case "JSON":
@@ -180,9 +166,6 @@ export function getTypeString(
       case "ENUM":
         oracleType = field.name + "_t";
         break;
-      case "MYPRIMETYPE":
-        oracleType = "NUMBER";
-        break;
       default:
         oracleType = field.type;
         break;
@@ -216,18 +199,16 @@ export function jsonToMySQL(obj) {
                   ? ` DEFAULT ${parseDefault(field, obj.database)}`
                   : ""
               }${
-                field.type === "MYPRIMETYPE"
-                  ? ` CHECK(\`${field.name}\` IN (${getPrimeCheckValues(field)}))`
-                  : field.check === "" ||
-                      !dbToTypes[obj.database][field.type].hasCheck
-                    ? !Object.keys(defaultTypes).includes(field.type)
-                      ? ` CHECK(\n\t\tJSON_SCHEMA_VALID("${generateSchema(
-                          obj.types.find(
-                            (t) => t.name === field.type.toLowerCase(),
-                          ),
-                        )}", \`${field.name}\`))`
-                      : ""
-                    : ` CHECK(${field.check})`
+                field.check === "" ||
+                !dbToTypes[obj.database][field.type].hasCheck
+                  ? !Object.keys(defaultTypes).includes(field.type)
+                    ? ` CHECK(\n\t\tJSON_SCHEMA_VALID("${generateSchema(
+                        obj.types.find(
+                          (t) => t.name === field.type.toLowerCase(),
+                        ),
+                      )}", \`${field.name}\`))`
+                    : ""
+                  : ` CHECK(${field.check})`
               }${field.comment ? ` COMMENT '${escapeQuotes(field.comment)}'` : ""}`,
           )
           .join(",\n")}${
@@ -323,12 +304,10 @@ export function jsonToPostgreSQL(obj) {
               }${field.unique ? " UNIQUE" : ""}${
                 field.default !== "" ? ` DEFAULT ${parseDefault(field)}` : ""
               }${
-                field.type === "MYPRIMETYPE"
-                  ? ` CHECK("${field.name}" IN (${getPrimeCheckValues(field)}))`
-                  : field.check === "" ||
-                      !dbToTypes[obj.database][field.type].hasCheck
-                    ? ""
-                    : ` CHECK(${field.check})`
+                field.check === "" ||
+                !dbToTypes[obj.database][field.type].hasCheck
+                  ? ""
+                  : ` CHECK(${field.check})`
               }`,
           )
           .join(",\n")}${
@@ -401,8 +380,6 @@ export function getSQLiteType(field) {
       return `TEXT CHECK("${field.name}" in (${field.values
         .map((v) => `'${v}'`)
         .join(", ")}))`;
-    case "MYPRIMETYPE":
-      return `INTEGER CHECK("${field.name}" IN (${getPrimeCheckValues(field)}))`;
     default:
       return "BLOB";
   }
@@ -422,12 +399,10 @@ export function jsonToSQLite(obj) {
             }" ${getSQLiteType(field)}${field.notNull ? " NOT NULL" : ""}${
               field.unique ? " UNIQUE" : ""
             }${field.default !== "" ? ` DEFAULT ${parseDefault(field, obj.database)}` : ""}${
-              field.type === "MYPRIMETYPE"
+              field.check === "" ||
+              !dbToTypes[obj.database][field.type].hasCheck
                 ? ""
-                : field.check === "" ||
-                    !dbToTypes[obj.database][field.type].hasCheck
-                  ? ""
-                  : ` CHECK(${field.check})`
+                : ` CHECK(${field.check})`
             }`,
         )
         .join(",\n")}${
@@ -467,18 +442,16 @@ export function jsonToMariaDB(obj) {
                   ? ` DEFAULT ${parseDefault(field, obj.database)}`
                   : ""
               }${
-                field.type === "MYPRIMETYPE"
-                  ? ` CHECK(\`${field.name}\` IN (${getPrimeCheckValues(field)}))`
-                  : field.check === "" ||
-                      !dbToTypes[obj.database][field.type].hasCheck
-                    ? !Object.keys(defaultTypes).includes(field.type)
-                      ? ` CHECK(\n\t\tJSON_SCHEMA_VALID('${generateSchema(
-                          obj.types.find(
-                            (t) => t.name === field.type.toLowerCase(),
-                          ),
-                        )}', \`${field.name}\`))`
-                      : ""
-                    : ` CHECK(${field.check})`
+                field.check === "" ||
+                !dbToTypes[obj.database][field.type].hasCheck
+                  ? !Object.keys(defaultTypes).includes(field.type)
+                    ? ` CHECK(\n\t\tJSON_SCHEMA_VALID('${generateSchema(
+                        obj.types.find(
+                          (t) => t.name === field.type.toLowerCase(),
+                        ),
+                      )}', \`${field.name}\`))`
+                    : ""
+                  : ` CHECK(${field.check})`
               }${field.comment ? ` COMMENT '${escapeQuotes(field.comment)}'` : ""}`,
           )
           .join(",\n")}${
@@ -547,12 +520,10 @@ export function jsonToSQLServer(obj) {
                   ? ` DEFAULT ${parseDefault(field, obj.database)}`
                   : ""
               }${
-                field.type === "MYPRIMETYPE"
-                  ? ` CHECK([${field.name}] IN (${getPrimeCheckValues(field)}))`
-                  : field.check === "" ||
-                      !dbToTypes[obj.database][field.type].hasCheck
-                    ? ""
-                    : ` CHECK(${field.check})`
+                field.check === "" ||
+                !dbToTypes[obj.database][field.type].hasCheck
+                  ? ""
+                  : ` CHECK(${field.check})`
               }`,
           )
           .join(",\n")}${
@@ -624,12 +595,10 @@ export function jsonToOracleSQL(obj) {
                   ? ` DEFAULT ${parseDefault(field, obj.database)}`
                   : ""
               }${
-                field.type === "MYPRIMETYPE"
-                  ? ` CHECK ("${field.name}" IN (${getPrimeCheckValues(field)}))`
-                  : field.check === "" ||
-                      !dbToTypes[obj.database][field.type].hasCheck
-                    ? ""
-                    : ` CHECK (${field.check})`
+                field.check === "" ||
+                !dbToTypes[obj.database][field.type].hasCheck
+                  ? ""
+                  : ` CHECK (${field.check})`
               }`,
           )
           .join(",\n")}${

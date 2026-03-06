@@ -6,13 +6,12 @@ import {
   TagInput,
   InputNumber,
   Checkbox,
-  Select,
 } from "@douyinfe/semi-ui";
 import { Action, ObjectType } from "../../../data/constants";
 import { IconDeleteStroked } from "@douyinfe/semi-icons";
 import { useDiagram, useLayout, useUndoRedo } from "../../../hooks";
 import { useTranslation } from "react-i18next";
-import { dbToTypes, PRIME_VALUES } from "../../../data/datatypes";
+import { dbToTypes } from "../../../data/datatypes";
 import { databases } from "../../../data/databases";
 
 export default function FieldDetails({ data, tid }) {
@@ -24,51 +23,38 @@ export default function FieldDetails({ data, tid }) {
   const [editField, setEditField] = useState({});
   const table = useMemo(() => tables.find((t) => t.id === tid), [tables, tid]);
 
-  const primeOptions = (data.values && data.values.length ? data.values : PRIME_VALUES).map((v) => ({ label: v, value: v }));
-
   return (
     <div>
       <div className="font-semibold">{t("default_value")}</div>
-      {data.type === "MYPRIMETYPE" ? (
-        <Select
-          className="my-2 w-full"
-          placeholder={t("default_value")}
-          value={data.default || undefined}
-          disabled={layout.readOnly || data.increment}
-          optionList={[{ label: "", value: "" }, ...primeOptions]}
-          onChange={(value) => updateField(tid, data.id, { default: value })}
-        />
-      ) : (
-        <Input
-          className="my-2"
-          placeholder={t("default_value")}
-          value={data.default}
-          readonly={layout.readOnly}
-          disabled={dbToTypes[database][data.type].noDefault || data.increment}
-          onChange={(value) => updateField(tid, data.id, { default: value })}
-          onFocus={(e) => setEditField({ default: e.target.value })}
-          onBlur={(e) => {
-            if (e.target.value === editField.default) return;
-            setUndoStack((prev) => [
-              ...prev,
-              {
-                action: Action.EDIT,
-                element: ObjectType.TABLE,
-                component: "field",
-                tid: tid,
-                fid: data.id,
-                undo: editField,
-                redo: { default: e.target.value },
-                message: t("edit_table", {
-                  tableName: table.name,
-                  extra: "[field]",
-                }),
-              },
-            ]);
-            setRedoStack([]);
-          }}
-        />
-      )}
+      <Input
+        className="my-2"
+        placeholder={t("default_value")}
+        value={data.default}
+        readonly={layout.readOnly}
+        disabled={dbToTypes[database][data.type].noDefault || data.increment}
+        onChange={(value) => updateField(tid, data.id, { default: value })}
+        onFocus={(e) => setEditField({ default: e.target.value })}
+        onBlur={(e) => {
+          if (e.target.value === editField.default) return;
+          setUndoStack((prev) => [
+            ...prev,
+            {
+              action: Action.EDIT,
+              element: ObjectType.TABLE,
+              component: "field",
+              tid: tid,
+              fid: data.id,
+              undo: editField,
+              redo: { default: e.target.value },
+              message: t("edit_table", {
+                tableName: table.name,
+                extra: "[field]",
+              }),
+            },
+          ]);
+          setRedoStack([]);
+        }}
+      />
       {(data.type === "ENUM" || data.type === "SET") && (
         <>
           <div className="font-semibold mb-1">
