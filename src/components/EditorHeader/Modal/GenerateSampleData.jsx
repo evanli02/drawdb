@@ -11,6 +11,16 @@ const FORMAT_OPTIONS = [
   { label: "SQL", value: "sql" },
 ];
 
+/**
+ * Modal content for generating sample data from diagram tables. Lets the user
+ * choose rows per table and format (JSON/CSV/SQL), then generates data and
+ * opens the export preview modal for download.
+ *
+ * @param {Object} props
+ * @param {Function} props.setExportData - Setter for export payload (data, extension, filename).
+ * @param {Function} props.setModal - Setter to switch to MODAL.CODE after generating.
+ * @param {string} [props.title] - Diagram title used for the default filename.
+ */
 export default function GenerateSampleData({ setExportData, setModal, title }) {
   const { t } = useTranslation();
   const { tables, relationships, database } = useDiagram();

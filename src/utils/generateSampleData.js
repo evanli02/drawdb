@@ -32,6 +32,16 @@ function randomChoice(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+/**
+ * Generates a single sample value for a field based on its type and metadata.
+ *
+ * @param {Object} field - Field definition (name, type, default, values, etc.).
+ * @param {number} tableIndex - Index of the table (for stable placeholders).
+ * @param {number} rowIndex - Row index (for increment and placeholders).
+ * @param {string} database - Diagram database.
+ * @param {Map} generatedIdsByTable - Map of table id -> array of generated PK values.
+ * @returns {string|number|boolean|null|object} Generated value.
+ */
 function generateValueForField(field, tableIndex, rowIndex, database, generatedIdsByTable) {
   const meta = dbToTypes[database]?.[field.type] ?? dbToTypes[DB.GENERIC]?.[field.type];
 
@@ -106,6 +116,13 @@ function generateValueForField(field, tableIndex, rowIndex, database, generatedI
   return `sample_${tableIndex}_${rowIndex}_${field.name}`;
 }
 
+/**
+ * Returns table indices in an order that respects FKs (referenced tables before referencers).
+ *
+ * @param {Array} tables - Diagram tables.
+ * @param {Array} relationships - Diagram relationships.
+ * @returns {number[]} Indices of tables in dependency order.
+ */
 function topologicalSort(tables, relationships) {
   const idToIndex = new Map(tables.map((t, i) => [t.id, i]));
   const inDegree = tables.map(() => 0);
@@ -135,6 +152,19 @@ function topologicalSort(tables, relationships) {
   return order;
 }
 
+/**
+ * Generates sample rows for all tables in the diagram with type-aware values
+ * and FK-aware ordering (parent tables before children, FK columns filled with
+ * valid parent IDs).
+ *
+ * @param {Array<{ id: string, name: string, fields: Array }>} tables - Diagram tables.
+ * @param {Array} relationships - Diagram relationships (for FK and ordering).
+ * @param {string} database - Diagram database (e.g. DB.GENERIC).
+ * @param {{ rowsPerTable?: number, format?: 'json'|'csv'|'sql' }} [options] - Options.
+ * @param {number} [options.rowsPerTable=5] - Number of rows to generate per table.
+ * @param {string} [options.format='json'] - Output format: 'json', 'csv', or 'sql'.
+ * @returns {{ data: string, extension: string }} Serialized data and file extension.
+ */
 export function generateSampleData(tables, relationships, database, options = {}) {
   const { rowsPerTable = 5, format = "json" } = options;
   const order = topologicalSort(tables, relationships);

@@ -6,6 +6,12 @@ import {
 } from "../../data/datatypes";
 import { escapeQuotes, getInlineFK, parseDefault } from "./shared";
 
+/**
+ * Returns a CHECK constraint string restricting the column to MYPRIMETYPE allowed primes.
+ *
+ * @param {string} quotedColumnName - Column name with dialect-specific quoting (e.g. "col" or `col`).
+ * @returns {string} CHECK(...) clause string.
+ */
 function getMyPrimeTypeCheck(quotedColumnName) {
   return `CHECK(${quotedColumnName} IN (${MYPRIMETYPE_ALLOWED_VALUES.join(", ")}))`;
 }

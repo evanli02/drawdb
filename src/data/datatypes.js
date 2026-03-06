@@ -2283,8 +2283,12 @@ export const dbToTypes = new Proxy(dbToTypesBase, {
 });
 
 /**
- * Safe type metadata lookup. Use when a field's type might not exist for the
- * current database (e.g. MYPRIMETYPE only in GENERIC). Falls back to DB.GENERIC.
+ * Returns type metadata for a field type, falling back to GENERIC if the type
+ * is not defined for the current database (e.g. MYPRIMETYPE only in GENERIC).
+ *
+ * @param {string} database - Current diagram database (e.g. DB.GENERIC, DB.MYSQL).
+ * @param {string} type - Field type name (e.g. "INT", "MYPRIMETYPE").
+ * @returns {object | null} Type metadata object or null if unknown.
  */
 export function getTypeMeta(database, type) {
   const meta = dbToTypes[database]?.[type];
