@@ -19,7 +19,7 @@ import {
   useLayout,
 } from "../../../hooks";
 import { useTranslation } from "react-i18next";
-import { dbToTypes } from "../../../data/datatypes";
+import { dbToTypes, PRIME_VALUES } from "../../../data/datatypes";
 
 export default function TypeField({ data, tid, fid }) {
   const { types, updateType } = useTypes();
@@ -122,6 +122,14 @@ export default function TypeField({ data, tid, fid }) {
                         type: value,
                         values: data.values ? [...data.values] : [],
                       }
+                    : e,
+                ),
+              });
+            } else if (value === "MYPRIMETYPE") {
+              updateType(tid, {
+                fields: types[tid].fields?.map((e, id) =>
+                  id === fid
+                    ? { ...data, type: value, values: [...PRIME_VALUES] }
                     : e,
                 ),
               });
