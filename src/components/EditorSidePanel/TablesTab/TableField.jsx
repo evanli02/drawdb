@@ -10,7 +10,7 @@ import {
   useLayout,
 } from "../../../hooks";
 import { useTranslation } from "react-i18next";
-import { dbToTypes } from "../../../data/datatypes";
+import { dbToTypes, MYPRIMETYPE_ALLOWED_VALUES } from "../../../data/datatypes";
 import { DragHandle } from "../../SortableList/DragHandle";
 import FieldDetails from "./FieldDetails";
 
@@ -113,6 +113,12 @@ export default function TableField({ data, tid, index, inherited }) {
                 type: value,
                 default: "",
                 values: data.values ? [...data.values] : [],
+                increment: incr,
+              });
+            } else if (value === "MYPRIMETYPE") {
+              updateField(tid, data.id, {
+                type: value,
+                default: String(MYPRIMETYPE_ALLOWED_VALUES[0]),
                 increment: incr,
               });
             } else if (

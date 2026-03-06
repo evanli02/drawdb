@@ -6,12 +6,13 @@ import {
   TagInput,
   InputNumber,
   Checkbox,
+  Select,
 } from "@douyinfe/semi-ui";
 import { Action, ObjectType } from "../../../data/constants";
 import { IconDeleteStroked } from "@douyinfe/semi-icons";
 import { useDiagram, useLayout, useUndoRedo } from "../../../hooks";
 import { useTranslation } from "react-i18next";
-import { dbToTypes } from "../../../data/datatypes";
+import { dbToTypes, MYPRIMETYPE_ALLOWED_VALUES } from "../../../data/datatypes";
 import { databases } from "../../../data/databases";
 
 export default function FieldDetails({ data, tid }) {
@@ -23,9 +24,42 @@ export default function FieldDetails({ data, tid }) {
   const [editField, setEditField] = useState({});
   const table = useMemo(() => tables.find((t) => t.id === tid), [tables, tid]);
 
-  return (
-    <div>
-      <div className="font-semibold">{t("default_value")}</div>
+  const defaultControl =
+    data.type === "MYPRIMETYPE" ? (
+      <Select
+        className="my-2 w-full"
+        placeholder={t("default_value")}
+        value={data.default || ""}
+        readonly={layout.readOnly}
+        disabled={data.increment}
+        optionList={MYPRIMETYPE_ALLOWED_VALUES.map((n) => ({
+          label: String(n),
+          value: String(n),
+        }))}
+        onChange={(value) => updateField(tid, data.id, { default: value })}
+        onFocus={() => setEditField({ default: data.default })}
+        onBlur={() => {
+          if (editField.default === data.default) return;
+          setUndoStack((prev) => [
+            ...prev,
+            {
+              action: Action.EDIT,
+              element: ObjectType.TABLE,
+              component: "field",
+              tid: tid,
+              fid: data.id,
+              undo: editField,
+              redo: { default: data.default },
+              message: t("edit_table", {
+                tableName: table.name,
+                extra: "[field]",
+              }),
+            },
+          ]);
+          setRedoStack([]);
+        }}
+      />
+    ) : (
       <Input
         className="my-2"
         placeholder={t("default_value")}
@@ -55,6 +89,12 @@ export default function FieldDetails({ data, tid }) {
           setRedoStack([]);
         }}
       />
+    );
+
+  return (
+    <div>
+      <div className="font-semibold">{t("default_value")}</div>
+      {defaultControl}
       {(data.type === "ENUM" || data.type === "SET") && (
         <>
           <div className="font-semibold mb-1">
