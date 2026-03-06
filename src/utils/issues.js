@@ -1,4 +1,4 @@
-import { dbToTypes } from "../data/datatypes";
+import { getTypeMeta } from "../data/datatypes";
 import i18n from "../i18n/i18n";
 import { isFunction } from "./utils";
 
@@ -11,9 +11,10 @@ function checkDefault(field, database) {
     field.default.toLowerCase() === "null"
   )
     return true;
-  if (!dbToTypes[database][field.type].checkDefault) return true;
+  const meta = getTypeMeta(database, field.type);
+  if (!meta?.checkDefault) return true;
 
-  return dbToTypes[database][field.type].checkDefault(field);
+  return meta.checkDefault(field);
 }
 
 export function getIssues(diagram) {

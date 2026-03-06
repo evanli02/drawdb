@@ -2281,3 +2281,13 @@ const dbToTypesBase = {
 export const dbToTypes = new Proxy(dbToTypesBase, {
   get: (target, prop) => (prop in target ? target[prop] : false),
 });
+
+/**
+ * Safe type metadata lookup. Use when a field's type might not exist for the
+ * current database (e.g. MYPRIMETYPE only in GENERIC). Falls back to DB.GENERIC.
+ */
+export function getTypeMeta(database, type) {
+  const meta = dbToTypes[database]?.[type];
+  if (meta && typeof meta === "object") return meta;
+  return dbToTypes[DB.GENERIC]?.[type] ?? null;
+}

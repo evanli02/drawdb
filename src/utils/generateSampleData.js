@@ -135,22 +135,6 @@ function topologicalSort(tables, relationships) {
   return order;
 }
 
-function buildFkMap(tables, relationships) {
-  const fkMap = new Map();
-  for (const rel of relationships) {
-    const endTable = tables.find((t) => t.id === rel.endTableId);
-    const startTable = tables.find((t) => t.id === rel.startTableId);
-    if (!endTable || !startTable) continue;
-    const endField = endTable.fields.find((f) => f.id === rel.endFieldId);
-    const startField = startTable.fields.find((f) => f.id === rel.startFieldId);
-    if (!endField || !startField) continue;
-    const key = `${startTable.id}:${startField.name}`;
-    if (!fkMap.has(key)) fkMap.set(key, []);
-    fkMap.get(key).push({ tableId: endTable.id, fieldName: endField.name });
-  }
-  return fkMap;
-}
-
 export function generateSampleData(tables, relationships, database, options = {}) {
   const { rowsPerTable = 5, format = "json" } = options;
   const order = topologicalSort(tables, relationships);
@@ -159,10 +143,11 @@ export function generateSampleData(tables, relationships, database, options = {}
   const tableRows = [];
   for (const tableIdx of order) {
     const table = tables[tableIdx];
+    const fields = table.fields ?? [];
     const rows = [];
     for (let r = 0; r < rowsPerTable; r++) {
       const row = {};
-      for (const field of table.fields) {
+      for (const field of fields) {
         let val = generateValueForField(field, tableIdx, r, database, generatedIdsByTable);
         if (Array.isArray(val) && field.type === "SET") {
           val = val.join(",");
@@ -171,7 +156,7 @@ export function generateSampleData(tables, relationships, database, options = {}
       }
       rows.push(row);
     }
-    const pkField = table.fields.find((f) => f.primary);
+    const pkField = fields.find((f) => f.primary);
     if (pkField) {
       generatedIdsByTable.set(table.id, rows.map((row) => row[pkField.name]));
     }
@@ -206,7 +191,11 @@ export function generateSampleData(tables, relationships, database, options = {}
       if (rows.length === 0) return `# ${tableName}\n(no rows)`;
       const headers = Object.keys(rows[0]);
       const escape = (v) => {
-        const s = v == null ? "" : String(v);
+        if (v == null) return "";
+        if (typeof v === "object") {
+          return `"${JSON.stringify(v).replace(/"/g, '""')}"`;
+        }
+        const s = String(v);
         if (s.includes(",") || s.includes('"') || s.includes("\n")) {
           return `"${s.replace(/"/g, '""')}"`;
         }

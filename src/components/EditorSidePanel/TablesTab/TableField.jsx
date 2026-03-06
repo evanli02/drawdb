@@ -10,7 +10,11 @@ import {
   useLayout,
 } from "../../../hooks";
 import { useTranslation } from "react-i18next";
-import { dbToTypes, MYPRIMETYPE_ALLOWED_VALUES } from "../../../data/datatypes";
+import {
+  dbToTypes,
+  getTypeMeta,
+  MYPRIMETYPE_ALLOWED_VALUES,
+} from "../../../data/datatypes";
 import { DragHandle } from "../../SortableList/DragHandle";
 import FieldDetails from "./FieldDetails";
 
@@ -105,8 +109,8 @@ export default function TableField({ data, tid, index, inherited }) {
               },
             ]);
             setRedoStack([]);
-            const incr =
-              data.increment && !!dbToTypes[database][value].canIncrement;
+            const meta = getTypeMeta(database, value);
+            const incr = data.increment && !!meta?.canIncrement;
 
             if (value === "ENUM" || value === "SET") {
               updateField(tid, data.id, {
@@ -121,16 +125,13 @@ export default function TableField({ data, tid, index, inherited }) {
                 default: String(MYPRIMETYPE_ALLOWED_VALUES[0]),
                 increment: incr,
               });
-            } else if (
-              dbToTypes[database][value].isSized ||
-              dbToTypes[database][value].hasPrecision
-            ) {
+            } else if (meta?.isSized || meta?.hasPrecision) {
               updateField(tid, data.id, {
                 type: value,
-                size: dbToTypes[database][value].defaultSize,
+                size: meta?.defaultSize,
                 increment: incr,
               });
-            } else if (!dbToTypes[database][value].hasDefault || incr) {
+            } else if (!meta?.hasDefault || incr) {
               updateField(tid, data.id, {
                 type: value,
                 increment: incr,
@@ -138,7 +139,7 @@ export default function TableField({ data, tid, index, inherited }) {
                 size: "",
                 values: [],
               });
-            } else if (dbToTypes[database][value].hasCheck) {
+            } else if (meta?.hasCheck) {
               updateField(tid, data.id, {
                 type: value,
                 check: "",

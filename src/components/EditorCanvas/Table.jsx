@@ -19,7 +19,7 @@ import { Popover, Tag, Button, SideSheet } from "@douyinfe/semi-ui";
 import { useLayout, useSettings, useDiagram, useSelect } from "../../hooks";
 import TableInfo from "../EditorSidePanel/TablesTab/TableInfo";
 import { useTranslation } from "react-i18next";
-import { dbToTypes } from "../../data/datatypes";
+import { getTypeMeta } from "../../data/datatypes";
 import { isRtl } from "../../i18n/utils/rtl";
 import i18n from "../../i18n/i18n";
 import { getCommentHeight, getTableHeight } from "../../utils/utils";
@@ -292,12 +292,13 @@ export default function Table({
                       <p className="me-4 font-bold">{e.name}</p>
                       <p
                         className={
-                          "ms-4 font-mono " + dbToTypes[database][e.type].color
+                          "ms-4 font-mono " +
+                          (getTypeMeta(database, e.type)?.color ?? "text-zinc-500")
                         }
                       >
                         {e.type +
-                          ((dbToTypes[database][e.type].isSized ||
-                            dbToTypes[database][e.type].hasPrecision) &&
+                          ((getTypeMeta(database, e.type)?.isSized ||
+                            getTypeMeta(database, e.type)?.hasPrecision) &&
                           e.size &&
                           e.size !== ""
                             ? "(" + e.size + ")"
@@ -474,12 +475,13 @@ export default function Table({
               {!fieldData.notNull && <span className="font-mono">?</span>}
               <span
                 className={
-                  "font-mono " + dbToTypes[database][fieldData.type].color
+                  "font-mono " +
+                  (getTypeMeta(database, fieldData.type)?.color ?? "text-zinc-500")
                 }
               >
                 {fieldData.type +
-                  ((dbToTypes[database][fieldData.type].isSized ||
-                    dbToTypes[database][fieldData.type].hasPrecision) &&
+                  ((getTypeMeta(database, fieldData.type)?.isSized ||
+                    getTypeMeta(database, fieldData.type)?.hasPrecision) &&
                   fieldData.size &&
                   fieldData.size !== ""
                     ? `(${fieldData.size})`
