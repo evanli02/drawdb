@@ -6,12 +6,16 @@ import {
   TagInput,
   InputNumber,
   Checkbox,
+  Select,
 } from "@douyinfe/semi-ui";
 import { Action, ObjectType } from "../../../data/constants";
 import { IconDeleteStroked } from "@douyinfe/semi-icons";
 import { useDiagram, useLayout, useUndoRedo } from "../../../hooks";
 import { useTranslation } from "react-i18next";
-import { dbToTypes } from "../../../data/datatypes";
+import {
+  getTypeMeta,
+  MYPRIMETYPE_ALLOWED_VALUES,
+} from "../../../data/datatypes";
 import { databases } from "../../../data/databases";
 
 export default function FieldDetails({ data, tid }) {
@@ -22,16 +26,50 @@ export default function FieldDetails({ data, tid }) {
   const { updateField, deleteField } = useDiagram();
   const [editField, setEditField] = useState({});
   const table = useMemo(() => tables.find((t) => t.id === tid), [tables, tid]);
+  const typeMeta = getTypeMeta(database, data.type);
 
-  return (
-    <div>
-      <div className="font-semibold">{t("default_value")}</div>
+  const defaultControl =
+    data.type === "MYPRIMETYPE" ? (
+      <Select
+        className="my-2 w-full"
+        placeholder={t("default_value")}
+        value={data.default || ""}
+        readonly={layout.readOnly}
+        disabled={data.increment}
+        optionList={MYPRIMETYPE_ALLOWED_VALUES.map((n) => ({
+          label: String(n),
+          value: String(n),
+        }))}
+        onChange={(value) => updateField(tid, data.id, { default: value })}
+        onFocus={() => setEditField({ default: data.default })}
+        onBlur={() => {
+          if (editField.default === data.default) return;
+          setUndoStack((prev) => [
+            ...prev,
+            {
+              action: Action.EDIT,
+              element: ObjectType.TABLE,
+              component: "field",
+              tid: tid,
+              fid: data.id,
+              undo: editField,
+              redo: { default: data.default },
+              message: t("edit_table", {
+                tableName: table.name,
+                extra: "[field]",
+              }),
+            },
+          ]);
+          setRedoStack([]);
+        }}
+      />
+    ) : (
       <Input
         className="my-2"
         placeholder={t("default_value")}
         value={data.default}
         readonly={layout.readOnly}
-        disabled={dbToTypes[database][data.type].noDefault || data.increment}
+        disabled={typeMeta?.noDefault || data.increment}
         onChange={(value) => updateField(tid, data.id, { default: value })}
         onFocus={(e) => setEditField({ default: e.target.value })}
         onBlur={(e) => {
@@ -55,6 +93,12 @@ export default function FieldDetails({ data, tid }) {
           setRedoStack([]);
         }}
       />
+    );
+
+  return (
+    <div>
+      <div className="font-semibold">{t("default_value")}</div>
+      {defaultControl}
       {(data.type === "ENUM" || data.type === "SET") && (
         <>
           <div className="font-semibold mb-1">
@@ -100,7 +144,7 @@ export default function FieldDetails({ data, tid }) {
           />
         </>
       )}
-      {dbToTypes[database][data.type].isSized && (
+      {typeMeta?.isSized && (
         <>
           <div className="font-semibold">{t("size")}</div>
           <InputNumber
@@ -133,7 +177,7 @@ export default function FieldDetails({ data, tid }) {
           />
         </>
       )}
-      {dbToTypes[database][data.type].hasPrecision && (
+      {typeMeta?.hasPrecision && (
         <>
           <div className="font-semibold">{t("precision")}</div>
           <Input
@@ -171,7 +215,7 @@ export default function FieldDetails({ data, tid }) {
           />
         </>
       )}
-      {dbToTypes[database][data.type].hasCheck && (
+      {typeMeta?.hasCheck && (
         <>
           <div className="font-semibold">{t("check")}</div>
           <Input
@@ -242,7 +286,7 @@ export default function FieldDetails({ data, tid }) {
           value="increment"
           checked={data.increment}
           disabled={
-            !dbToTypes[database][data.type].canIncrement || data.isArray || layout.readOnly
+            !typeMeta?.canIncrement || data.isArray || layout.readOnly
           }
           onChange={(checkedValues) => {
             setUndoStack((prev) => [
@@ -311,7 +355,7 @@ export default function FieldDetails({ data, tid }) {
         </div>
       )}
       {databases[database].hasUnsignedTypes &&
-        dbToTypes[database][data.type].signed && (
+        typeMeta?.signed && (
           <div className="flex justify-between items-center my-3">
             <div className="font-medium">{t("Unsigned")}</div>
             <Checkbox

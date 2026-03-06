@@ -1,6 +1,20 @@
 import { DB } from "../../data/constants";
-import { dbToTypes, defaultTypes } from "../../data/datatypes";
+import {
+  dbToTypes,
+  defaultTypes,
+  MYPRIMETYPE_ALLOWED_VALUES,
+} from "../../data/datatypes";
 import { escapeQuotes, getInlineFK, parseDefault } from "./shared";
+
+/**
+ * Returns a CHECK constraint string restricting the column to MYPRIMETYPE allowed primes.
+ *
+ * @param {string} quotedColumnName - Column name with dialect-specific quoting (e.g. "col" or `col`).
+ * @returns {string} CHECK(...) clause string.
+ */
+function getMyPrimeTypeCheck(quotedColumnName) {
+  return `CHECK(${quotedColumnName} IN (${MYPRIMETYPE_ALLOWED_VALUES.join(", ")}))`;
+}
 
 export function getJsonType(f) {
   if (!Object.keys(defaultTypes).includes(f.type)) {
@@ -27,6 +41,8 @@ export function getJsonType(f) {
       return `{\n\t\t\t\t\t"type": "array",\n\t\t\t\t\t"items": {\n\t\t\t\t\t\t"type": "string",\n\t\t\t\t\t\t"enum": [${f.values
         .map((v) => `"${v}"`)
         .join(", ")}]\n\t\t\t\t\t}\n\t\t\t\t}`;
+    case "MYPRIMETYPE":
+      return `{\n\t\t\t\t\t"type": "integer",\n\t\t\t\t\t"enum": [${MYPRIMETYPE_ALLOWED_VALUES.join(", ")}]\n\t\t\t\t}`;
     default:
       return '{ "type" : "string"}';
   }
@@ -46,6 +62,9 @@ export function getTypeString(
   dbms = DB.MYSQL,
   baseType = false,
 ) {
+  if (field.type === "MYPRIMETYPE") {
+    return "INT";
+  }
   if (dbms === DB.MYSQL) {
     if (field.type === "UUID") {
       return `VARCHAR(36)`;
@@ -199,16 +218,18 @@ export function jsonToMySQL(obj) {
                   ? ` DEFAULT ${parseDefault(field, obj.database)}`
                   : ""
               }${
-                field.check === "" ||
-                !dbToTypes[obj.database][field.type].hasCheck
-                  ? !Object.keys(defaultTypes).includes(field.type)
-                    ? ` CHECK(\n\t\tJSON_SCHEMA_VALID("${generateSchema(
-                        obj.types.find(
-                          (t) => t.name === field.type.toLowerCase(),
-                        ),
-                      )}", \`${field.name}\`))`
-                    : ""
-                  : ` CHECK(${field.check})`
+                field.type === "MYPRIMETYPE"
+                  ? ` ${getMyPrimeTypeCheck("`" + field.name + "`")}`
+                  : field.check === "" ||
+                      !dbToTypes[obj.database][field.type].hasCheck
+                    ? !Object.keys(defaultTypes).includes(field.type)
+                      ? ` CHECK(\n\t\tJSON_SCHEMA_VALID("${generateSchema(
+                          obj.types.find(
+                            (t) => t.name === field.type.toLowerCase(),
+                          ),
+                        )}", \`${field.name}\`))`
+                      : ""
+                    : ` CHECK(${field.check})`
               }${field.comment ? ` COMMENT '${escapeQuotes(field.comment)}'` : ""}`,
           )
           .join(",\n")}${
@@ -304,10 +325,12 @@ export function jsonToPostgreSQL(obj) {
               }${field.unique ? " UNIQUE" : ""}${
                 field.default !== "" ? ` DEFAULT ${parseDefault(field)}` : ""
               }${
-                field.check === "" ||
-                !dbToTypes[obj.database][field.type].hasCheck
-                  ? ""
-                  : ` CHECK(${field.check})`
+                field.type === "MYPRIMETYPE"
+                  ? ` ${getMyPrimeTypeCheck('"' + field.name + '"')}`
+                  : field.check === "" ||
+                      !dbToTypes[obj.database][field.type].hasCheck
+                    ? ""
+                    : ` CHECK(${field.check})`
               }`,
           )
           .join(",\n")}${
@@ -380,6 +403,8 @@ export function getSQLiteType(field) {
       return `TEXT CHECK("${field.name}" in (${field.values
         .map((v) => `'${v}'`)
         .join(", ")}))`;
+    case "MYPRIMETYPE":
+      return "INTEGER";
     default:
       return "BLOB";
   }
@@ -399,10 +424,12 @@ export function jsonToSQLite(obj) {
             }" ${getSQLiteType(field)}${field.notNull ? " NOT NULL" : ""}${
               field.unique ? " UNIQUE" : ""
             }${field.default !== "" ? ` DEFAULT ${parseDefault(field, obj.database)}` : ""}${
-              field.check === "" ||
-              !dbToTypes[obj.database][field.type].hasCheck
-                ? ""
-                : ` CHECK(${field.check})`
+              field.type === "MYPRIMETYPE"
+                ? ` ${getMyPrimeTypeCheck('"' + field.name + '"')}`
+                : field.check === "" ||
+                    !dbToTypes[obj.database][field.type].hasCheck
+                  ? ""
+                  : ` CHECK(${field.check})`
             }`,
         )
         .join(",\n")}${
@@ -442,16 +469,18 @@ export function jsonToMariaDB(obj) {
                   ? ` DEFAULT ${parseDefault(field, obj.database)}`
                   : ""
               }${
-                field.check === "" ||
-                !dbToTypes[obj.database][field.type].hasCheck
-                  ? !Object.keys(defaultTypes).includes(field.type)
-                    ? ` CHECK(\n\t\tJSON_SCHEMA_VALID('${generateSchema(
-                        obj.types.find(
-                          (t) => t.name === field.type.toLowerCase(),
-                        ),
-                      )}', \`${field.name}\`))`
-                    : ""
-                  : ` CHECK(${field.check})`
+                field.type === "MYPRIMETYPE"
+                  ? ` ${getMyPrimeTypeCheck("`" + field.name + "`")}`
+                  : field.check === "" ||
+                      !dbToTypes[obj.database][field.type].hasCheck
+                    ? !Object.keys(defaultTypes).includes(field.type)
+                      ? ` CHECK(\n\t\tJSON_SCHEMA_VALID('${generateSchema(
+                          obj.types.find(
+                            (t) => t.name === field.type.toLowerCase(),
+                          ),
+                        )}', \`${field.name}\`))`
+                      : ""
+                    : ` CHECK(${field.check})`
               }${field.comment ? ` COMMENT '${escapeQuotes(field.comment)}'` : ""}`,
           )
           .join(",\n")}${
@@ -520,10 +549,12 @@ export function jsonToSQLServer(obj) {
                   ? ` DEFAULT ${parseDefault(field, obj.database)}`
                   : ""
               }${
-                field.check === "" ||
-                !dbToTypes[obj.database][field.type].hasCheck
-                  ? ""
-                  : ` CHECK(${field.check})`
+                field.type === "MYPRIMETYPE"
+                  ? ` ${getMyPrimeTypeCheck("[" + field.name + "]")}`
+                  : field.check === "" ||
+                      !dbToTypes[obj.database][field.type].hasCheck
+                    ? ""
+                    : ` CHECK(${field.check})`
               }`,
           )
           .join(",\n")}${
@@ -595,10 +626,12 @@ export function jsonToOracleSQL(obj) {
                   ? ` DEFAULT ${parseDefault(field, obj.database)}`
                   : ""
               }${
-                field.check === "" ||
-                !dbToTypes[obj.database][field.type].hasCheck
-                  ? ""
-                  : ` CHECK (${field.check})`
+                field.type === "MYPRIMETYPE"
+                  ? ` ${getMyPrimeTypeCheck('"' + field.name + '"')}`
+                  : field.check === "" ||
+                      !dbToTypes[obj.database][field.type].hasCheck
+                    ? ""
+                    : ` CHECK (${field.check})`
               }`,
           )
           .join(",\n")}${

@@ -19,6 +19,13 @@ const intRegex = /^-?\d*$/;
 const doubleRegex = /^-?\d*.?\d+$/;
 const binaryRegex = /^[01]+$/;
 
+/** Fixed set of prime numbers supported by MYPRIMETYPE (2, 3, 5, 7, 11, …) */
+export const MYPRIMETYPE_ALLOWED_VALUES = [
+  2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
+  73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151,
+  157, 163, 167, 173, 179, 181, 191, 193, 197, 199,
+];
+
 /* eslint-disable no-unused-vars */
 const defaultTypesBase = {
   INT: {
@@ -345,6 +352,23 @@ const defaultTypesBase = {
     isSized: false,
     hasPrecision: false,
     noDefault: true,
+  },
+  MYPRIMETYPE: {
+    type: "MYPRIMETYPE",
+    color: intColor,
+    checkDefault: (field) => {
+      const n = Number(field.default);
+      return (
+        Number.isInteger(n) &&
+        !Number.isNaN(n) &&
+        MYPRIMETYPE_ALLOWED_VALUES.includes(n)
+      );
+    },
+    hasCheck: true,
+    isSized: false,
+    hasPrecision: false,
+    canIncrement: false,
+    hasQuotes: false,
   },
 };
 
@@ -2257,3 +2281,17 @@ const dbToTypesBase = {
 export const dbToTypes = new Proxy(dbToTypesBase, {
   get: (target, prop) => (prop in target ? target[prop] : false),
 });
+
+/**
+ * Returns type metadata for a field type, falling back to GENERIC if the type
+ * is not defined for the current database (e.g. MYPRIMETYPE only in GENERIC).
+ *
+ * @param {string} database - Current diagram database (e.g. DB.GENERIC, DB.MYSQL).
+ * @param {string} type - Field type name (e.g. "INT", "MYPRIMETYPE").
+ * @returns {object | null} Type metadata object or null if unknown.
+ */
+export function getTypeMeta(database, type) {
+  const meta = dbToTypes[database]?.[type];
+  if (meta && typeof meta === "object") return meta;
+  return dbToTypes[DB.GENERIC]?.[type] ?? null;
+}

@@ -1485,6 +1485,9 @@ export default function ControlPanel({ title, setTitle, lastSaved }) {
       language: {
         function: () => setModal(MODAL.LANGUAGE),
       },
+      generate_sample_data: {
+        function: () => setModal(MODAL.SAMPLE_DATA),
+      },
       export_saved_data: {
         function: exportSavedData,
       },
